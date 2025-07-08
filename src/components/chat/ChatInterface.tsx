@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { Character, ChatMessage as ChatMessageType } from '@/types';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';

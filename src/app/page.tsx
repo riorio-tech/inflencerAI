@@ -7,14 +7,12 @@ import { CharacterSearch } from '@/components/character/CharacterSearch';
 import { CharacterSection } from '@/components/character/CharacterSection';
 import { CharacterCreateForm } from '@/components/character/CharacterCreateForm';
 import { ChatInterface } from '@/components/chat/ChatInterface';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { SubscriptionButton } from '@/components/payment/SubscriptionButton';
-import { Coins, MessageCircle, Users, Star, Home as HomeIcon, Plus, Search } from 'lucide-react';
+import { Coins, MessageCircle, Home as HomeIcon, Plus, Search } from 'lucide-react';
 
 export default function Home() {
-  const [characters, setCharacters] = useState<Character[]>(mockCharacters);
   const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(null);
   const [userCredits, setUserCredits] = useState(50);
   const [currentView, setCurrentView] = useState<'browse' | 'chat' | 'search' | 'create'>('browse');
@@ -110,7 +108,7 @@ export default function Home() {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        setUserCreatedCharacters(parsed.map((char: any) => ({
+        setUserCreatedCharacters(parsed.map((char: Character) => ({
           ...char,
           createdAt: new Date(char.createdAt),
           updatedAt: new Date(char.updatedAt),

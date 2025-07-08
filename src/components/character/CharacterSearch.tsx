@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Search, Filter, X, Star } from 'lucide-react';
+import { Search, Filter, X } from 'lucide-react';
 import { SearchFilters } from '@/types';
 import { characterCategories } from '@/data/characters';
 
@@ -99,7 +99,7 @@ export function CharacterSearch({ onSearch }: CharacterSearchProps) {
       </div>
 
       <div className="flex gap-2 items-center">
-        <Select value={sortBy} onValueChange={(value: any) => setSortBy(value)}>
+        <Select value={sortBy} onValueChange={(value: 'popularity' | 'rating' | 'newest' | 'alphabetical') => setSortBy(value)}>
           <SelectTrigger className="w-40">
             <SelectValue placeholder="並び順" />
           </SelectTrigger>

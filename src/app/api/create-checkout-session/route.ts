@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-12-18.acacia',
+  apiVersion: '2025-06-30.basil',
 });
 
 export async function POST(request: NextRequest) {
@@ -10,14 +10,11 @@ export async function POST(request: NextRequest) {
   console.log('STRIPE_SECRET_KEY exists:', !!process.env.STRIPE_SECRET_KEY);
   
   try {
-    let body = {};
     try {
-      body = await request.json();
-    } catch (e) {
+      await request.json();
+    } catch {
       console.log('No JSON body provided, using defaults');
     }
-    
-    const { priceId = 'price_1HExample' } = body;
 
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],

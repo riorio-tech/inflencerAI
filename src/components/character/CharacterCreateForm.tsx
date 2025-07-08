@@ -169,7 +169,7 @@ export function CharacterCreateForm({ onSave, onCancel }: CharacterCreateFormPro
             <label className="block text-sm font-medium text-white mb-2">
               話し方スタイル
             </label>
-            <Select value={formData.speakingStyle} onValueChange={(value: any) => setFormData(prev => ({ ...prev, speakingStyle: value }))}>
+            <Select value={formData.speakingStyle} onValueChange={(value: Character['speakingStyle']) => setFormData(prev => ({ ...prev, speakingStyle: value }))}>
               <SelectTrigger>
                 <SelectValue placeholder="話し方を選択" />
               </SelectTrigger>
