@@ -1,103 +1,312 @@
-import Image from "next/image";
+'use client';
+
+import { useState, useEffect } from 'react';
+import { Character, SearchFilters } from '@/types';
+import { mockCharacters } from '@/data/characters';
+import { CharacterSearch } from '@/components/character/CharacterSearch';
+import { CharacterSection } from '@/components/character/CharacterSection';
+import { CharacterCreateForm } from '@/components/character/CharacterCreateForm';
+import { ChatInterface } from '@/components/chat/ChatInterface';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { SubscriptionButton } from '@/components/payment/SubscriptionButton';
+import { Coins, MessageCircle, Users, Star, Home as HomeIcon, Plus, Search } from 'lucide-react';
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [characters, setCharacters] = useState<Character[]>(mockCharacters);
+  const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(null);
+  const [userCredits, setUserCredits] = useState(50);
+  const [currentView, setCurrentView] = useState<'browse' | 'chat' | 'search' | 'create'>('browse');
+  const [searchResults, setSearchResults] = useState<Character[]>([]);
+  const [userCreatedCharacters, setUserCreatedCharacters] = useState<Character[]>([]);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
+  const handleCharacterSelect = (character: Character) => {
+    setSelectedCharacter(character);
+    setCurrentView('chat');
+  };
+
+  const handleBack = () => {
+    setCurrentView('browse');
+    setSelectedCharacter(null);
+  };
+
+  const handleSearch = (filters: SearchFilters) => {
+    let filtered = allCharacters;
+
+    if (filters.query) {
+      filtered = filtered.filter(char =>
+        char.name.toLowerCase().includes(filters.query!.toLowerCase()) ||
+        char.description.toLowerCase().includes(filters.query!.toLowerCase()) ||
+        char.tags.some(tag => tag.toLowerCase().includes(filters.query!.toLowerCase()))
+      );
+    }
+
+    if (filters.category) {
+      filtered = filtered.filter(char => 
+        char.category.toLowerCase() === filters.category!.toLowerCase()
+      );
+    }
+
+    if (filters.tags && filters.tags.length > 0) {
+      filtered = filtered.filter(char =>
+        filters.tags!.some(tag => char.tags.includes(tag))
+      );
+    }
+
+    if (filters.minRating) {
+      filtered = filtered.filter(char => char.rating >= filters.minRating!);
+    }
+
+    if (filters.sortBy) {
+      filtered = [...filtered].sort((a, b) => {
+        switch (filters.sortBy) {
+          case 'popularity':
+            return b.popularity - a.popularity;
+          case 'rating':
+            return b.rating - a.rating;
+          case 'newest':
+            return b.createdAt.getTime() - a.createdAt.getTime();
+          case 'alphabetical':
+            return a.name.localeCompare(b.name);
+          default:
+            return 0;
+        }
+      });
+    }
+
+    setSearchResults(filtered);
+    setCurrentView('search');
+  };
+
+  const handleBackToHome = () => {
+    setCurrentView('browse');
+    setSearchResults([]);
+  };
+
+  const handleCreateCharacter = (characterData: Omit<Character, 'id' | 'popularity' | 'rating' | 'createdAt' | 'updatedAt' | 'isActive'>) => {
+    const newCharacter: Character = {
+      ...characterData,
+      id: Date.now().toString(),
+      popularity: 0,
+      rating: 5.0,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      isActive: true,
+    };
+    
+    setUserCreatedCharacters(prev => {
+      const updated = [...prev, newCharacter];
+      // ローカルストレージに保存
+      localStorage.setItem('userCreatedCharacters', JSON.stringify(updated));
+      return updated;
+    });
+    setCurrentView('browse');
+  };
+
+  // ページ読み込み時にローカルストレージからキャラクターを復元
+  useEffect(() => {
+    const saved = localStorage.getItem('userCreatedCharacters');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        setUserCreatedCharacters(parsed.map((char: any) => ({
+          ...char,
+          createdAt: new Date(char.createdAt),
+          updatedAt: new Date(char.updatedAt),
+        })));
+      } catch (error) {
+        console.error('Failed to load saved characters:', error);
+      }
+    }
+  }, []);
+
+  const handleCreditUpdate = (credits: number) => {
+    setUserCredits(credits);
+  };
+
+  if (currentView === 'chat' && selectedCharacter) {
+    return (
+      <div className="h-screen bg-gray-900">
+        <div className="h-full max-w-4xl mx-auto p-4">
+          <Card className="h-full bg-gray-800 border-gray-700">
+            <ChatInterface
+              character={selectedCharacter}
+              onBack={handleBack}
+              userCredits={userCredits}
+              onCreditUpdate={handleCreditUpdate}
             />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+          </Card>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+      </div>
+    );
+  }
+
+  const allCharacters = [...mockCharacters, ...userCreatedCharacters];
+  const recentCharacters = allCharacters.filter(char => ['1', '2', '3', '4', '5', '6'].includes(char.id) || userCreatedCharacters.includes(char));
+  const recommendedCharacters = allCharacters.filter(char => ['7', '8', '1', '2'].includes(char.id));
+
+  return (
+    <div className="min-h-screen bg-gray-900">
+      {/* Sidebar */}
+      <div className="fixed left-0 top-0 h-full w-16 bg-gray-800 border-r border-gray-700 flex flex-col items-center py-4 z-10">
+        <div className="mb-8">
+          <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
+            <span className="text-white font-bold text-sm">AI</span>
+          </div>
+        </div>
+        
+        <div className="flex flex-col gap-4">
+          <button 
+            onClick={handleBackToHome}
+            className={`p-3 rounded-lg transition-colors ${
+              currentView === 'browse' 
+                ? 'text-white bg-gray-700' 
+                : 'text-gray-400 hover:text-white hover:bg-gray-700'
+            }`}
+          >
+            <HomeIcon className="w-5 h-5" />
+          </button>
+          <button 
+            onClick={() => setCurrentView('create')}
+            className={`p-3 rounded-lg transition-colors ${
+              currentView === 'create' 
+                ? 'text-white bg-gray-700' 
+                : 'text-gray-400 hover:text-white hover:bg-gray-700'
+            }`}
+          >
+            <Plus className="w-5 h-5" />
+          </button>
+          <button 
+            onClick={() => setCurrentView('search')}
+            className={`p-3 rounded-lg transition-colors ${
+              currentView === 'search' 
+                ? 'text-white bg-gray-700' 
+                : 'text-gray-400 hover:text-white hover:bg-gray-700'
+            }`}
+          >
+            <Search className="w-5 h-5" />
+          </button>
+          <button className="p-3 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors">
+            <MessageCircle className="w-5 h-5" />
+          </button>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="ml-16">
+        {/* Header */}
+        <div className="sticky top-0 bg-gray-900/95 backdrop-blur-sm border-b border-gray-800 px-6 py-4 z-20">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-white">character.ai</h1>
+              <div className="flex items-center gap-4 mt-2">
+                <span className="px-3 py-1 bg-blue-600 text-white text-sm rounded-full">
+                  ✨ 新しくて高速なCharacter.AIが登場！
+                </span>
+                <SubscriptionButton size="sm" className="bg-blue-600 hover:bg-blue-700">
+                  今すぐ試す
+                </SubscriptionButton>
+              </div>
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 px-4 py-2 bg-gray-800 rounded-lg">
+                <Coins className="w-4 h-4 text-yellow-500" />
+                <span className="font-semibold text-white">{userCredits}</span>
+                <span className="text-sm text-gray-400">クレジット</span>
+              </div>
+              <SubscriptionButton className="bg-blue-600 hover:bg-blue-700">
+                c.ai+を取得
+              </SubscriptionButton>
+            </div>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="px-6 py-6">
+          {currentView === 'create' ? (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-bold text-white">キャラクター作成</h2>
+                <Button 
+                  onClick={handleBackToHome}
+                  variant="outline" 
+                  size="sm"
+                  className="border-gray-600 text-white hover:bg-gray-700"
+                >
+                  ホームに戻る
+                </Button>
+              </div>
+              
+              <CharacterCreateForm 
+                onSave={handleCreateCharacter}
+                onCancel={handleBackToHome}
+              />
+            </div>
+          ) : currentView === 'search' ? (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-bold text-white">キャラクター検索</h2>
+                <Button 
+                  onClick={handleBackToHome}
+                  variant="outline" 
+                  size="sm"
+                  className="border-gray-600 text-white hover:bg-gray-700"
+                >
+                  ホームに戻る
+                </Button>
+              </div>
+              
+              <CharacterSearch onSearch={handleSearch} />
+              
+              {searchResults.length > 0 && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-semibold text-white">
+                      検索結果 ({searchResults.length}件)
+                    </h3>
+                  </div>
+                  <CharacterSection
+                    title=""
+                    characters={searchResults}
+                    onCharacterSelect={handleCharacterSelect}
+                  />
+                </div>
+              )}
+              
+              {searchResults.length === 0 && (
+                <div className="text-center py-12">
+                  <div className="text-6xl mb-4">🔍</div>
+                  <h3 className="text-xl font-semibold text-white mb-2">キャラクターが見つかりません</h3>
+                  <p className="text-gray-400">検索フィルターを調整してみてください</p>
+                </div>
+              )}
+            </div>
+          ) : (
+            <>
+              {userCreatedCharacters.length > 0 && (
+                <CharacterSection
+                  title="あなたが作成したキャラクター"
+                  characters={userCreatedCharacters.slice(0, 6)}
+                  onCharacterSelect={handleCharacterSelect}
+                />
+              )}
+              
+              <CharacterSection
+                title="会話を続ける"
+                characters={recentCharacters.slice(0, 6)}
+                onCharacterSelect={handleCharacterSelect}
+              />
+
+              <CharacterSection
+                title="おすすめ"
+                characters={recommendedCharacters.slice(0, 6)}
+                onCharacterSelect={handleCharacterSelect}
+              />
+            </>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

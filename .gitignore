@@ -33,6 +33,37 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 
+# Security and sensitive files
+*.key
+*.pem
+*.p12
+*.pfx
+.credentials/
+secrets/
+private/
+*.secret
+auth.json
+credentials.json
+service-account.json
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+database.db
+db.sqlite
+
+# API Keys and configs
+api-keys.json
+config.local.js
+config.production.js
+
+# Temporary folders
+tmp/
+temp/
+.tmp/
+.temp/
+
 # vercel
 .vercel
 
